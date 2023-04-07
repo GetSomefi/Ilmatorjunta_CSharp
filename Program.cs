@@ -10,6 +10,23 @@ Enter
 Console.WriteLine(Console.ReadKey(true).Key);
 */
 
+class EnemyFunctions{
+    static public Tuple<int,int>[] enemies = new Tuple<int, int>[] { 
+        new Tuple<int,int>(15,3),
+        new Tuple<int,int>(4,4),
+        new Tuple<int,int>(2,2),
+    };
+    static public bool AttackEnemy(int enemyIndex){
+        if (OperatingSystem.IsWindows()){
+            Console.Beep(500,800);
+        }
+        enemies[enemyIndex] = new Tuple<int,int>(-1,-1);
+
+        Console.WriteLine("-Destroyed-");
+        return true;
+    }
+}
+
 class Position{
     public Position(int x, int y){
         PosX = x;
@@ -17,6 +34,20 @@ class Position{
     }
     public int PosX {get;set;}
     public int PosY {get;set;}
+
+    public bool targetLocked;
+
+    public int CheckIfEnemy(Tuple<int,int>[] enemies){
+        int targetOk = -1;
+        int index = -1;
+        foreach (var oneEnemy in enemies)
+        {
+            index++;
+            if(oneEnemy.Item1 == PosX && oneEnemy.Item2 == PosY)
+                targetOk = index;
+        }
+        return targetOk;
+    }
 }
 
 class Program
@@ -47,7 +78,7 @@ class Program
                 {
                     if(i == oneEnemy.Item2){ //pos y
                         char[] chars = space.ToCharArray();
-                        chars[oneEnemy.Item1] = charList[2]; //pos x
+                        chars[oneEnemy.Item1-1] = charList[2]; //pos x
                         space = new string(chars);
                     }               
                 }
@@ -86,9 +117,39 @@ class Program
             moving = false;
         }
         if(key == ConsoleKey.Spacebar){
-            //Console.WriteLine("Attack");
-            command = 5;
-            characterToMove = 4;
+            int enemy = pos.CheckIfEnemy(enemies);
+            //Console.WriteLine("enemy " + enemy);
+            if( enemy >= 0 ){
+                if(pos.targetLocked){
+                    pos.targetLocked = false;
+                    Console.WriteLine("-Wait-");
+                    if (OperatingSystem.IsWindows()){
+                        for (int i = 0; i < 8; i++)
+                        {
+                            Console.Beep(2000,200);
+                            Console.WriteLine("-Wait-");
+                        }
+                    }
+                    EnemyFunctions.AttackEnemy(enemy);
+                }else{
+                    pos.targetLocked = true;
+                    if (OperatingSystem.IsWindows()){
+                        Console.Beep(1000,200);
+                        Console.Beep(1000,200);
+                    }
+                    Console.WriteLine("-Target locked!-");
+                    command = 5;
+                    characterToMove = 5;
+                }
+            }else{
+                pos.targetLocked = false;
+                Console.WriteLine("-No Target-");
+
+                if (OperatingSystem.IsWindows()){
+                    Console.Beep(1200,150);
+                    Console.Beep(1000,100);
+                }
+            }
         }
         string[] refreshMap = makeMap(charList, (20,10), enemies);
         string[] newMap = moveCharacter(refreshMap,pos,charList[characterToMove]);
@@ -115,21 +176,16 @@ class Program
             'X'     //5 lock
         };
 
-        Tuple<int,int>[] enemies = new Tuple<int, int>[] { 
-            new Tuple<int,int>(15,3),
-            new Tuple<int,int>(4,4),
-            new Tuple<int,int>(1,1),
-        };
-        string[] theMap = makeMap(mapChars, (20,10), enemies);
-        Position pos = new Position(1,1);
+        string[] theMap = makeMap(mapChars, (20,10), EnemyFunctions.enemies);
+        Position pos = new Position(0,0);
         UpdateMap(theMap);
 
         bool moving = true;
         int keyCommand = 0;
         while( moving ){
             //UpdateMap(theMap, pos);
-            theMap = GetKey(Console.ReadKey().Key, theMap, pos, mapChars, ref moving, 3, enemies);
-            //Console.WriteLine(pos.PosX);
+            theMap = GetKey(Console.ReadKey().Key, theMap, pos, mapChars, ref moving, 3, EnemyFunctions.enemies);
+            //Console.WriteLine(pos.PosX + "," + pos.PosY);
             //Console.WriteLine(pos.PosY);
             
         }
